@@ -2,6 +2,7 @@ import essentia
 from essentia.standard import MonoLoader, FrameGenerator, Windowing, Spectrum, MelBands
 import numpy as np
 from tqdm import tqdm
+from functools import reduce
 
 def create_analyzers(fs=44100.0,
                      nhop=512,
@@ -45,7 +46,7 @@ def extract_mel_feats(audio_fp, analyzers, fs=44100.0, nhop=512, nffts=[1024, 20
 
 if __name__ == '__main__':
     import argparse
-    import cPickle as pickle
+    import _pickle as pickle
     import json
     import os
 
@@ -84,7 +85,7 @@ if __name__ == '__main__':
 
         for json_fp in json_fps:
             song_name = os.path.splitext(os.path.split(json_fp)[1])[0]
-            print 'Extracting feats from {}'.format(song_name)
+            print ('Extracting feats from {}'.format(song_name))
 
             with open(json_fp, 'r') as json_f:
                 meta = json.loads(json_f.read())

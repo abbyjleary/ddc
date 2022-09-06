@@ -6,11 +6,9 @@
 from collections import Counter
 import math
 import random
+from functools import reduce
 
 import numpy as np
-
-from beatcalc import BeatCalc
-from util import make_onset_feature_context, np_pad
 
 class Chart(object):
     def __init__(self, song_metadata, metadata, annotations):
@@ -20,8 +18,6 @@ class Chart(object):
 
         self.annotations = annotations
         self.label_counts = Counter()
-
-        self.beat_calc = BeatCalc(song_metadata['offset'], song_metadata['bpms'], song_metadata['stops'])
 
         self.first_annotation_time = self.annotations[0][2]
         self.last_annotation_time = self.annotations[-1][2]
@@ -158,7 +154,7 @@ class OnsetChart(Chart):
         else:
             valid = set(range(self.get_first_onset(), self.get_last_onset() + 1))
             if exclude_onset_neighbors > 0:
-                onset_neighbors = [set([x + i for x in self.onsets]) | set([x - i for x in self.onsets]) for i in xrange(1, exclude_onset_neighbors + 1)]
+                onset_neighbors = [set([x + i for x in self.onsets]) | set([x - i for x in self.onsets]) for i in range(1, exclude_onset_neighbors + 1)]
                 onset_neighbors = reduce(lambda x, y: x | y, onset_neighbors)
                 valid -= onset_neighbors
             if nunroll > 0:
@@ -180,7 +176,7 @@ class OnsetChart(Chart):
         else:
             blanks = self.blanks
             if exclude_onset_neighbors > 0:
-                onset_neighbors = [set([x + i for x in self.onsets]) | set([x - i for x in self.onsets]) for i in xrange(1, exclude_onset_neighbors + 1)]
+                onset_neighbors = [set([x + i for x in self.onsets]) | set([x - i for x in self.onsets]) for i in range(1, exclude_onset_neighbors + 1)]
                 onset_neighbors = reduce(lambda x, y: x | y, onset_neighbors)
                 blanks -= onset_neighbors
             if exclude_pre_onsets:
@@ -203,7 +199,7 @@ class OnsetChart(Chart):
         seq_feats_audio = []
         seq_feats_other = []
         seq_y = []
-        for i in xrange(subseq_start - zack_hack_div_2, subseq_start + subseq_len + zack_hack_div_2):
+        for i in range(subseq_start - zack_hack_div_2, subseq_start + subseq_len + zack_hack_div_2):
             feats_audio, feats_other, y = self.get_example(i, dtype=dtype, **feat_kwargs)
             seq_feats_audio.append(feats_audio)
             seq_feats_other.append(feats_other)
@@ -238,7 +234,7 @@ class SymbolicChart(Chart):
         prepend_annotations = [self.annotations[0][:3] + [p] for p in prepend]
         annotations = prepend_annotations + self.annotations
         prog_last = 0.0
-        for i in xrange(len(annotations) - 1):
+        for i in range(len(annotations) - 1):
             pulse_last, beat_last, time_last, label_last = annotations[i]
             pulse, beat, time, label = annotations[i + 1]
             prog = (time - self.first_annotation_time) / self.time_annotated

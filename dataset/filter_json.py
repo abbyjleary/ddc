@@ -4,6 +4,7 @@ if __name__ == '__main__':
     import json
     import os
     from util import get_subdirs
+    from functools import reduce
 
     parser = argparse.ArgumentParser()
     parser.add_argument('json_in_dir', type=str, help='Input JSON directory')
@@ -41,9 +42,9 @@ if __name__ == '__main__':
 
     chart_types = set(filter(lambda x: bool(x), [x.strip() for x in args.chart_types.split(',')]))
     chart_difficulties = set(filter(lambda x: bool(x), [x.strip() for x in args.chart_difficulties.split(',')]))
-    substitutions = filter(lambda x: bool(x), [x.strip() for x in args.substitutions.split(',')])
+    substitutions = list(filter(lambda x: bool(x), [x.strip() for x in args.substitutions.split(',')]))
     assert len(substitutions) % 2 == 0
-    substitutions = [(substitutions[i], substitutions[i + 1]) for i in xrange(0, len(substitutions), 2)]
+    substitutions = [(substitutions[i], substitutions[i + 1]) for i in range(0, len(substitutions), 2)]
     substitutions = {x.strip():y.strip() for x, y in substitutions}
     arrow_types = set(filter(lambda x: bool(x), [x.strip() for x in args.arrow_types.split(',')]))
     arrow_types.add('0')
@@ -51,21 +52,21 @@ if __name__ == '__main__':
     permutations = set([x.strip() for x in filter(lambda x: bool(x), args.permutations.split(','))])
 
     if len(chart_types) > 0:
-        print 'Only accepting the following chart types: {}'.format(chart_types)
+        print ('Only accepting the following chart types: {}'.format(chart_types))
     if len(chart_difficulties) > 0:
-        print 'Only accepting the following chart difficulties: {}'.format(chart_difficulties)
+        print ('Only accepting the following chart difficulties: {}'.format(chart_difficulties))
     if args.min_chart_feet > 0:
-        print 'Only accepting charts with min feet: {}'.format(args.min_chart_feet)
+        print ('Only accepting charts with min feet: {}'.format(args.min_chart_feet))
     if args.max_chart_feet > 0:
-        print 'Only accepting charts with max feet: {}'.format(args.max_chart_feet)
+        print ('Only accepting charts with max feet: {}'.format(args.max_chart_feet))
     if len(substitutions) > 0:
-        print 'Making the following arrow substitutions: {}'.format(substitutions)
+        print ('Making the following arrow substitutions: {}'.format(substitutions))
     if len(arrow_types) > 0:
-        print 'Only accepting the following arrow types: {}'.format(arrow_types)
+        print ('Only accepting the following arrow types: {}'.format(arrow_types))
     if args.max_jump_size > 0:
-        print 'Only accepting charts with max jump size: {}'.format(args.max_jump_size)
+        print ('Only accepting charts with max jump size: {}'.format(args.max_jump_size))
     if len(args.ppms) > 0:
-        print 'Only accepting charts with pulses per measure: {}'.format(args.ppms)
+        print ('Only accepting charts with pulses per measure: {}'.format(args.ppms))
 
     if not os.path.isdir(args.json_out_dir):
         os.mkdir(args.json_out_dir)
@@ -73,8 +74,8 @@ if __name__ == '__main__':
     pack_names = get_subdirs(args.json_in_dir, args.choose)
 
     for pack_name in pack_names:
-        print '-' * 80
-        print pack_name
+        print ('-' * 80)
+        print (pack_name)
 
         pack_out_dir = os.path.join(args.json_out_dir, pack_name)
         if not os.path.isdir(pack_out_dir):
@@ -84,8 +85,8 @@ if __name__ == '__main__':
         pack_naccepted = 0
         pack_ntotal = 0
         for json_name in os.listdir(pack_dir):
-            print '-' * 8
-            print json_name
+            print ('-' * 8)
+            print (json_name)
 
             json_fp = os.path.join(pack_dir, json_name)
             with open(json_fp, 'r') as f:
@@ -94,19 +95,19 @@ if __name__ == '__main__':
             charts_accepted = []
             for chart_meta in song_meta['charts']:
                 if len(chart_types) > 0 and chart_meta['type'] not in chart_types:
-                    print 'Unacceptable chart type: {}'.format(chart_meta['type'])
+                    print ('Unacceptable chart type: {}'.format(chart_meta['type']))
                     continue
 
                 if len(chart_difficulties) > 0 and chart_meta['difficulty_coarse'] not in chart_difficulties:
-                    print 'Unacceptable chart difficulty: {}'.format(chart_meta['difficulty_coarse'])
+                    print ('Unacceptable chart difficulty: {}'.format(chart_meta['difficulty_coarse']))
                     continue
 
                 if args.min_chart_feet >= 0 and chart_meta['difficulty_fine'] < args.min_chart_feet:
-                    print 'Unacceptable chart feet: {}'.format(chart_meta['difficulty_fine'])
+                    print ('Unacceptable chart feet: {}'.format(chart_meta['difficulty_fine']))
                     continue
 
                 if args.max_chart_feet >= 0 and chart_meta['difficulty_fine'] > args.max_chart_feet:
-                    print 'Unacceptable chart feet: {}'.format(chart_meta['difficulty_fine'])
+                    print ('Unacceptable chart feet: {}'.format(chart_meta['difficulty_fine']))
                     continue
 
                 if len(substitutions) > 0 or args.remove_zeros:
@@ -128,7 +129,7 @@ if __name__ == '__main__':
                             if char not in arrow_types:
                                 bad_types.add(char)
                     if len(bad_types) > 0:
-                        print 'Unacceptable chart arrow types: {}'.format(bad_types)
+                        print ('Unacceptable chart arrow types: {}'.format(bad_types))
                         continue
 
                 if args.max_jump_size > 0:
@@ -139,7 +140,7 @@ if __name__ == '__main__':
                             if char != '0':
                                 jump_size += 1
                         if jump_size > args.max_jump_size:
-                            print 'Unacceptable jump: {}'.format(note)
+                            print ('Unacceptable jump: {}'.format(note))
                             acceptable = False
                             break
                     if not acceptable:
@@ -186,7 +187,7 @@ if __name__ == '__main__':
                     acceptable = True
                     for (_, ppm, _), _, _, _ in chart_meta['notes']:
                         if ppm not in ppms:
-                            print 'Unacceptable ppm: {}'.format(ppm)
+                            print ('Unacceptable ppm: {}'.format(ppm))
                             acceptable = False
                             break
                     if not acceptable:
@@ -196,7 +197,7 @@ if __name__ == '__main__':
                     chart_meta_copy = copy.deepcopy(chart_meta)
                     notes_cleaned = []
                     for meas, beat, time, note in chart_meta_copy['notes']:
-                        note_new = ''.join([note[int(permutation[i])] for i in xrange(len(permutation))])
+                        note_new = ''.join([note[int(permutation[i])] for i in range(len(permutation))])
 
                         notes_cleaned.append((meas, beat, time, note_new))
                         chart_meta_copy['notes'] = notes_cleaned
@@ -207,7 +208,7 @@ if __name__ == '__main__':
             charts_ntotal = len(song_meta['charts'])
             pack_naccepted += charts_naccepted
             pack_ntotal += charts_ntotal
-            print 'Accepted {}/{}'.format(charts_naccepted, charts_ntotal)
+            print ('Accepted {}/{}'.format(charts_naccepted, charts_ntotal))
 
             json_out_fp = os.path.abspath(os.path.join(pack_out_dir, json_name))
             if os.path.isfile(json_out_fp):
@@ -219,4 +220,4 @@ if __name__ == '__main__':
             song_meta['charts'] = charts_accepted
             with open(json_out_fp, 'w') as f:
                 f.write(json.dumps(song_meta))
-        print 'Pack accepted {}/{}'.format(pack_naccepted, pack_ntotal)
+        print ('Pack accepted {}/{}'.format(pack_naccepted, pack_ntotal))

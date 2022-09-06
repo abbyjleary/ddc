@@ -1,5 +1,6 @@
 import math
 import random
+from functools import reduce
 
 import tensorflow as tf
 import numpy as np
@@ -138,7 +139,7 @@ class SymNet:
 
                 pool_shape = [1, ptime, pband, 1]
                 pooled = tf.nn.max_pool(convolved, ksize=pool_shape, strides=pool_shape, padding='SAME')
-                print '{}: {}'.format(layer_name, pooled.get_shape())
+                print ('{}: {}'.format(layer_name, pooled.get_shape()))
 
                 # TODO: CNN dropout?
 
@@ -150,9 +151,9 @@ class SymNet:
         # Flatten CNN
         nfeats_conv = reduce(lambda x, y: x * y, [int(x) for x in cnn_output.get_shape()[-3:]])
         feats_conv = tf.reshape(cnn_output, shape=[batch_size * in_nunroll, nfeats_conv])
-        print 'feats_sym: {}'.format(feats_sym.get_shape())
-        print 'feats_cnn: {}'.format(feats_conv.get_shape())
-        print 'feats_other: {}'.format(feats_other.get_shape())
+        print ('feats_sym: {}'.format(feats_sym.get_shape()))
+        print ('feats_cnn: {}'.format(feats_conv.get_shape()))
+        print ('feats_other: {}'.format(feats_other.get_shape()))
 
         # Reduce CNN dimensionality
         if cnn_dim_reduction_size >= 0:
@@ -172,7 +173,7 @@ class SymNet:
                 elif cnn_dim_reduction_nonlin == 'relu':
                     feats_conv = tf.nn.relu(feats_conv)
 
-                print 'feats_cnn_reduced: {}'.format(feats_conv.get_shape())
+                print ('feats_cnn_reduced: {}'.format(feats_conv.get_shape()))
 
         # Project to RNN size
         rnn_output_inspect = None
@@ -217,7 +218,7 @@ class SymNet:
             with tf.variable_scope('rnn_unroll'):
                 state = initial_state
                 outputs = []
-                for i in xrange(nunroll):
+                for i in range(nunroll):
                     if i > 0:
                         tf.get_variable_scope().reuse_variables()
                     (cell_output, state) = cell(rnn_inputs[i], state)
@@ -233,7 +234,7 @@ class SymNet:
             feats_all = tf.concat([feats_sym, feats_conv, feats_other], axis=1)
             rnn_output = tf.reshape(feats_all, shape=[batch_size, in_nunroll * nfeats_tot])
             rnn_output_size = in_nunroll * nfeats_tot
-        print 'rnn_output: {}'.format(rnn_output.get_shape())
+        print ('rnn_output: {}'.format(rnn_output.get_shape()))
 
         # Dense NN
         dnn_output = rnn_output
@@ -253,7 +254,7 @@ class SymNet:
                 if mode == 'train' and dnn_keep_prob < 1.0:
                     last_layer = tf.nn.dropout(last_layer, dnn_keep_prob)
                 last_layer_size = layer_size
-                print '{}: {}'.format(layer_name, last_layer.get_shape())
+                print ('{}: {}'.format(layer_name, last_layer.get_shape()))
 
             dnn_output = last_layer
             dnn_output_size = last_layer_size
@@ -294,7 +295,7 @@ class SymNet:
 
         if mode != 'gen':
             neg_log_lhoods = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=targets)
-            print neg_log_lhoods.get_shape()
+            print (neg_log_lhoods.get_shape())
             """
             # calculate cross-entropy, result is [batch_size * nunroll] where each entry is an unscaled neg ln prob
             neg_log_lhoods = tf.nn.seq2seq.sequence_loss_by_example(
@@ -386,7 +387,7 @@ class SymNet:
             if arrow in self._IN_SPECIAL:
                 result = self._IN_SPECIAL.index(arrow)
             else:
-                multipliers = [int(math.pow(self.sym_narrowclasses, self.sym_narrows - i - 1)) for i in xrange(self.sym_narrows)]
+                multipliers = [int(math.pow(self.sym_narrowclasses, self.sym_narrows - i - 1)) for i in range(self.sym_narrows)]
                 result = len(self._IN_SPECIAL) + sum([multipliers[i] * int(arrowclass) for i, arrowclass in enumerate(arrow)])
         elif encoding == 'bagofarrows':
             in_len = len(self._IN_SPECIAL) + (self.sym_narrows * self.sym_narrowclasses)
@@ -407,7 +408,7 @@ class SymNet:
         batch_syms_target = []
         batch_feats_other = []
         batch_feats_audio = []
-        for _ in xrange(self.batch_size):
+        for _ in range(self.batch_size):
             chart = charts[random.randint(0, len(charts) - 1)]
 
             syms, feats_other, feats_audio = chart.get_random_subsequence(self.in_nunroll, **seq_feat_kwargs)
@@ -449,13 +450,13 @@ class SymNet:
             subseq_stride = self.batch_size
             subseq_end = eval_chart.get_nannotations() - subseq_len
 
-        for i in xrange(subseq_start, subseq_end, subseq_stride):
+        for i in range(subseq_start, subseq_end, subseq_stride):
             batch_syms = []
             batch_syms_inputs = []
             batch_feats_other = []
             batch_feats_audio = []
             batch_syms_targets = []
-            for j in xrange(self.batch_size):
+            for j in range(self.batch_size):
                 if i + j >= eval_chart.get_nannotations():
                     break
                 syms, feats_other, feats_audio = eval_chart.get_subsequence(i + j, subseq_len, **seq_feat_kwargs)

@@ -15,7 +15,7 @@ class NgramSequence:
             append = ['<post>']
 
         sequence = prepend + self.sequence + append
-        for i in xrange(len(sequence) - (k - 1)):
+        for i in range(len(sequence) - (k - 1)):
             yield tuple(sequence[i:i + k])
 
 class NgramLanguageModel:
@@ -66,7 +66,7 @@ class NgramLanguageModel:
 if __name__ == '__main__':
     import argparse
     from collections import Counter
-    import cPickle as pickle
+    import _pickle as pickle
     import json
     import math
     import os
@@ -161,6 +161,6 @@ if __name__ == '__main__':
         copy_pasta = []
         for l in eval_results:
             copy_pasta.append(','.join([str(x) for x in l]))
-        print ','.join(copy_pasta)
+        print (','.join(copy_pasta))
     else:
         raise NotImplementedError()

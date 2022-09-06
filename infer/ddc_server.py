@@ -1,3 +1,4 @@
+import encodings
 import math
 import os
 import shutil
@@ -7,7 +8,13 @@ from essentia.standard import MetadataReader
 import numpy as np
 import tensorflow as tf
 from scipy.signal import argrelextrema
-assert tf.__version__ == '0.12.1'
+#print (tf.__version__)
+#assert tf.__version__ == '0.12.1'
+
+#import sys  
+#import importlib
+#importlib.reload(sys)
+#sys.setdefaultencoding('utf8')
 
 from onset_net import OnsetNet
 from sym_net import SymNet
@@ -15,7 +22,7 @@ from util import apply_z_norm, make_onset_feature_context
 from extract_feats import extract_mel_feats
 
 def load_sp_model(sp_ckpt_fp, sess, batch_size=128):
-    with tf.variable_scope('model_sp'):
+    with tf.compat.v1.variable_scope('model_sp'):
         model_sp = OnsetNet(
             mode='gen',
             batch_size=batch_size,
@@ -42,13 +49,13 @@ def load_sp_model(sp_ckpt_fp, sess, batch_size=128):
             opt=None,
             export_feat_name=None,
             zack_hack=0)
-    model_sp_vars = filter(lambda v: 'model_sp' in v.name, tf.all_variables())
-    saver = tf.train.Saver(model_sp_vars)
+    model_sp_vars = filter(lambda v: 'model_sp' in v.name, tf.compat.v1.all_variables())
+    saver = tf.compat.v1.train.Saver(model_sp_vars)
     saver.restore(sess, sp_ckpt_fp)
     return model_sp
 
 def load_ss_model(ss_ckpt_fp, sess):
-    with tf.variable_scope('model_ss'):
+    with tf.compat.v1.variable_scope('model_ss'):
         model_ss = SymNet(
             mode='gen',
             batch_size=1,
@@ -137,7 +144,7 @@ def create_chart_dir(
         ss_model, idx_to_label,
         out_dir, delete_audio=False):
     if not artist or not title:
-        print 'Extracting metadata from {}'.format(audio_fp)
+        print ('Extracting metadata from {}'.format(audio_fp))
         meta_reader = MetadataReader(filename=audio_fp)
         metadata = meta_reader()
         if not artist:
@@ -149,7 +156,7 @@ def create_chart_dir(
         if not title:
             title = 'Unknown Title'
 
-    print 'Loading {} - {}'.format(artist, title)
+    print ('Loading {} - {}'.format(artist, title))
     try:
         song_feats = extract_mel_feats(audio_fp, analyzers, nhop=441)
     except:
@@ -157,7 +164,7 @@ def create_chart_dir(
     song_feats -= norm[0]
     song_feats /= norm[1]
     song_len_sec = song_feats.shape[0] / _HZ
-    print 'Processed {} minutes of features'.format(song_len_sec / 60.0)
+    print ('Processed {} minutes of features'.format(song_len_sec / 60.0))
 
     diff_chart_txts = []
     for diff in diffs:
@@ -169,10 +176,10 @@ def create_chart_dir(
         feats_other = np.zeros((sp_batch_size, 1, 5), dtype=np.float32)
         feats_other[:, :, coarse] = 1.0
 
-        print 'Computing step placement scores'
+        print ('Computing step placement scores')
         feats_audio = np.zeros((sp_batch_size, 1, 15, 80, 3), dtype=np.float32)
         predictions = []
-        for start in xrange(0, song_feats.shape[0], sp_batch_size):
+        for start in range(0, song_feats.shape[0], sp_batch_size):
             for i, frame_idx in enumerate(range(start, start + sp_batch_size)):
                 feats_audio[i] = make_onset_feature_context(song_feats, frame_idx, 7)
 
@@ -184,9 +191,9 @@ def create_chart_dir(
             prediction = sess.run(sp_model.prediction, feed_dict=feed_dict)[:, 0]
             predictions.append(prediction)
         predictions = np.concatenate(predictions)[:song_feats.shape[0]]
-        print predictions.shape
+        print (predictions.shape)
 
-        print 'Peak picking'
+        print ('Peak picking')
         predictions_smoothed = np.convolve(predictions, np.hamming(5), 'same')
         maxima = argrelextrema(predictions_smoothed, np.greater_equal, order=1)[0]
         placed_times = []
@@ -194,14 +201,14 @@ def create_chart_dir(
             t = float(i) * _DT
             if predictions[i] >= threshold:
                 placed_times.append(t)
-        print 'Found {} peaks, density {} steps per second'.format(len(placed_times), len(placed_times) / song_len_sec)
+        print ('Found {} peaks, density {} steps per second'.format(len(placed_times), len(placed_times) / song_len_sec))
 
-        print 'Performing step selection'
+        print ('Performing step selection')
         state = sess.run(ss_model.initial_state)
         step_prev = '<-1>'
         times_arr = [placed_times[0]] + placed_times + [placed_times[-1]]
         selected_steps = []
-        for i in xrange(1, len(times_arr) - 1):
+        for i in range(1, len(times_arr) - 1):
             dt_prev, dt_next = times_arr[i] - times_arr[i-1], times_arr[i+1] - times_arr[i]
             feed_dict = {
                 ss_model.syms: np.array([[ss_model.arrow_to_encoding(step_prev, 'bagofarrows')]], dtype=np.float32),
@@ -219,13 +226,13 @@ def create_chart_dir(
             step_prev = step
         assert len(placed_times) == len(selected_steps)
 
-        print 'Creating chart text'
+        print ('Creating chart text')
         time_to_step = {int(round(t * _HZ)) : step for t, step in zip(placed_times, selected_steps)}
         max_subdiv = max(time_to_step.keys())
         if max_subdiv % _SUBDIV != 0:
             max_subdiv += _SUBDIV - (max_subdiv % _SUBDIV)
-        full_steps = [time_to_step.get(i, '0000') for i in xrange(max_subdiv)]
-        measures = [full_steps[i:i+_SUBDIV] for i in xrange(0, max_subdiv, _SUBDIV)]
+        full_steps = [time_to_step.get(i, '0000') for i in range(max_subdiv)]
+        measures = [full_steps[i:i+_SUBDIV] for i in range(0, max_subdiv, _SUBDIV)]
         measures_txt = '\n,\n'.join(['\n'.join(measure) for measure in measures])
         chart_txt = _CHART_TEMPL.format(
             ccoarse=_DIFFS[coarse],
@@ -234,7 +241,7 @@ def create_chart_dir(
         )
         diff_chart_txts.append(chart_txt)
 
-    print 'Creating SM'
+    print ('Creating SM')
     out_dir_name = os.path.split(out_dir)[1]
     audio_out_name = os.path.split(audio_fp)[1]
     sm_txt = _TEMPL.format(
@@ -244,7 +251,7 @@ def create_chart_dir(
         bpm=_BPM,
         charts='\n'.join(diff_chart_txts))
 
-    print 'Saving to {}'.format(out_dir)
+    print ('Saving to {}'.format(out_dir))
     try:
         if not os.path.isdir(out_dir):
             os.mkdir(out_dir)
@@ -320,14 +327,14 @@ def choreograph():
             if str(e).startswith('Invalid audio file'):
                 return 'Invalid audio file', 400
             shutil.rmtree(out_dir)
-            print e
+            print (e)
             return 'Unknown error', 500
         except Exception as e:
             shutil.rmtree(out_dir)
-            print e
+            print (e)
             return 'Unknown error', 500
 
-        print 'Creating zip {}'.format(z.name)
+        print ('Creating zip {}'.format(z.name))
         with zipfile.ZipFile(z.name, 'w', zipfile.ZIP_DEFLATED) as f:
             for fn in os.listdir(out_dir):
                 f.write(
@@ -356,7 +363,7 @@ def add_header(r):
 
 if __name__ == '__main__':
     import argparse as argparse
-    import cPickle as pickle
+    import _pickle as pickle
     import os
     import uuid
     import zipfile
@@ -385,32 +392,32 @@ if __name__ == '__main__':
 
     global SESS
     graph = tf.Graph()
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.log_device_placement = True
     config.allow_soft_placement = True
     config.gpu_options.allow_growth = True
     #config.gpu_options.per_process_gpu_memory_fraction = 1.0
-    SESS = tf.Session(graph=graph, config=config)
+    SESS = tf.compat.v1.Session(graph=graph, config=config)
 
     global NORM
-    print 'Loading band norms'
+    print ('Loading band norms')
     with open(ARGS.norm_pkl_fp, 'rb') as f:
-        NORM = pickle.load(f)
+        NORM = pickle.load(f, encoding='latin1')
 
     global ANALYZERS
-    print 'Creating Mel analyzers'
+    print ('Creating Mel analyzers')
     ANALYZERS = create_analyzers(nhop=441)
 
     global IDX_TO_LABEL
-    print 'Loading labels'
+    print ('Loading labels')
     with open(ARGS.labels_txt_fp, 'r') as f:
         IDX_TO_LABEL = {i + 1:l for i, l in enumerate(f.read().splitlines())}
 
     global SP_MODEL, SS_MODEL
     with graph.as_default():
-        print 'Loading step placement model'
+        print ('Loading step placement model')
         SP_MODEL = load_sp_model(ARGS.sp_ckpt_fp, SESS, ARGS.sp_batch_size)
-        print 'Loading step selection model'
+        print ('Loading step selection model')
         SS_MODEL = load_ss_model(ARGS.ss_ckpt_fp, SESS)
 
     if ARGS.max_file_size is not None:

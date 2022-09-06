@@ -1,6 +1,7 @@
 import numpy as np
-
 from chart import SymbolicChart, OnsetChart
+from functools import reduce
+
 
 def create_onset_charts(meta, song_features, frame_rate):
     charts = []
@@ -9,7 +10,7 @@ def create_onset_charts(meta, song_features, frame_rate):
         try:
             onset_chart = OnsetChart(song_metadata, song_features, frame_rate, metadata, raw_chart['notes'])
         except Exception as e:
-            print 'Error from {}: {}'.format(meta['title'].encode('ascii', 'ignore'), e)
+            print ('Error from {}: {}'.format(meta['title'].encode('ascii', 'ignore'), e))
             continue
         charts.append(onset_chart)
 
@@ -22,7 +23,7 @@ def create_symbolic_charts(meta, song_features, frame_rate, sym_k):
         try:
             sym_chart = SymbolicChart(song_metadata, song_features, frame_rate, metadata, raw_chart['notes'], sym_k)
         except ValueError as e:
-            print 'Error from {}: {}'.format(meta['title'].encode('ascii', 'ignore'), e)
+            print ('Error from {}: {}'.format(meta['title'].encode('ascii', 'ignore'), e))
             continue
         charts.append(sym_chart)
 
@@ -30,7 +31,7 @@ def create_symbolic_charts(meta, song_features, frame_rate, sym_k):
 
 if __name__ == '__main__':
     import argparse
-    import cPickle as pickle
+    import dill as pickle
     import glob
     import json
     import os
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     frame_rate = 1.0
     if args.frame_rate:
         frame_rate = reduce(lambda x, y: x / y, [float(x) for x in args.frame_rate.split(',')])
-        print frame_rate
+        print (frame_rate)
 
     name_from_fp = lambda x: os.path.splitext(os.path.split(x)[1])[0]
 
@@ -96,7 +97,7 @@ if __name__ == '__main__':
                 nbad += len(meta['charts']) - len(song_charts)
 
                 if len(song_data[2]) == 0:
-                    print 'No charts'
+                    print ('No charts')
                     continue
 
                 out_name = '{}.pkl'.format(json_name)
@@ -108,4 +109,4 @@ if __name__ == '__main__':
         with open(os.path.join(args.out_dir, '{}.txt'.format(dataset_name)), 'w') as f:
             f.write('\n'.join(dataset_out_names))
 
-    print 'Parsed {} charts, {} passed {} failed'.format(ngood + nbad, ngood, nbad)
+    print ('Parsed {} charts, {} passed {} failed'.format(ngood + nbad, ngood, nbad))
