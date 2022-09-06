@@ -59,8 +59,8 @@ The demo (unfortunately) requires tensorflow 0.12.1 and essentia. `virtualenv` r
     * [(Fraxtil) Fraxtil's Arrow Arrangements](https://fra.xtil.net/simfiles/data/arrowarrangements/Fraxtil's%20Arrow%20Arrangements%20[SM5].zip)
     * [(Fraxtil) Fraxtil's Beast Beats](https://fra.xtil.net/simfiles/data/beastbeats/Fraxtil's%20Beast%20Beats%20[SM5].zip)
 1. Under `data/raw/itg`, download and unzip:
-    * [(ITG) In The Groove](http://stepmaniaonline.net/downloads/packs/In%20The%20Groove%201.zip)
-    * [(ITG) In The Groove 2](http://stepmaniaonline.net/downloads/packs/In%20The%20Groove%202.zip)
+    * [(ITG) In The Groove](https://search.stepmaniaonline.net/pack/id/1089)
+    * [(ITG) In The Groove 2](https://search.stepmaniaonline.net/pack/id/1090)
 1. Navigate to `scripts/`
 1. Parse `.sm` files to JSON: `./all.sh ./smd_1_extract.sh`
 1. Filter JSON files (removing mines, etc.): `./all.sh ./smd_2_filter.sh`
